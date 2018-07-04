@@ -1,0 +1,61 @@
+1.  When/where  the  layout  loaded  and  parse  in  Magento?  
+
+	
+
+2.  How  do  Magento  locate  the  controller/action  to  be  excuted?
+
+	-Bước 1 : Tạo 1 file route.xml trong folder etc/frontend(cho frontend) hoặc etc/adminhtml (cho admin controller) 
+	- Bước 2 : Thêm 1 số config tự tạo trong routes.xml ví dụ như sau : router id, frontName -> cho đường dẫn URL ( localhost/yourMagentoProject/frontName/tên controller/action ) 
+	-Bước 3 : Tạo Action trong Controller.
+		 
+	
+3.  How  do  Magento  process  from  friendly  URL  to  controller/action  ?  Where  is  the  code  implementation?  
+	- friendly URL sẽ nhận biết trang homepage trước nếu path Url trống, tiếp theo sẽ nhận biết theo route-id/controller/action , nếu ko có controller nào đc tìm thấy sẽ tìm trong Controller/Index/Index. 
+	- Code implementation có thể tìm thấy ở trong thư mục: magento/framework/App/Router/Base.php.
+
+4.  What  does  each  table  in  Magento  do?  How  does  Magento  store  product,  customers  in  databse  ? 
+	+) Customer: bảng customer_entity là bảng lưu trữ thông tin chính về khách hàng.
+	Các bảng phụ :customer_entity_datetime, customer_entity_decimal, customer_entity_int, customer_entity_text, customer_entity_varchar chứa giá trị của các thuộc tính được phân loại theo loại dữ liệu tương ứng.
+	+) Catalog: bao gồm danh mục và sản phẩm.
+	Cách lưu trữ bảng Catalog tương tự như bảng Customer, bảng chính là catalog_category_entity, các bảng phụ là các bảng có tiền tố như catalog_category. Cần lưu ý từ bảng này rằng parent_id là lưu trữ thông tin về mối quan hệ giữa các loại (loại chính).
+	Bảng catalog_category_product là để hiển thị mối quan hệ giữa sản phẩm và danh mục, sản phẩm nào thuộc loại nào.
+	Bảng có tiền tố catalog_product_entity giá trị lưu trữ của thuộc tính sản phẩm.
+	Bảng catalog_product_link thể hiện mối quan hệ giữa các sản phẩm, trong đó các loại mối quan hệ được lưu trữ trong catalog_product_link_type, các giá trị của các thuộc tính mối quan hệ được lưu trữ trong bảng khác với tiền tố tương ứng.
+	Bảng catalog_product_option chứa thông tin về các tùy chọn mà sản phẩm có thể có. Bảng này được liên kết với catalog_product_bundle_option
+	Bảng catalog_product_website hiển thị mối quan hệ giữa sản phẩm và trang web, sản phẩm trong Magento được tạo bởi các trang web riêng biệt.
+
+5.  Purpose  of  each  indexer? 
+	Mục đích chuyển bảng EAV -> FLAT load dữ liệu performance tốt hơn ở trang frontend.
+
+6.  Purpose  of  flat  tables  ?  
+	Giúp tăng tốc khi tương tác database bên trang frontend.
+
+7.  Observer  and  plugin  comparison? 
+	- Plugins: được sử dụng để thay đổi 'behavior' của bất kì các phương thức public ban đầu nào.
+	- Observer: lắng nghe các events và thực hiện kích hoạt các handel xử lý tương ứng.
+8.  How  to  use  an  event  like  this  $this->_eventManager->dispatch($this->_eventPrefix.  '_move_before',  $eventParams); ?
+	Sử dụng Observer, ví dụ căn bản như sau:
+	b1: Tạo file Index.php theo directory app/code/Namespace/Module/Controller/Index/Index.php: nơi đây sẽ viết code dispatch như $this->_eventManager->dispatch($this->_eventPrefix.  '_move_before',  $eventParams);
+	B2: Tạo file events.xml theo directory app/code/Namespace/Module/etc/events.xml: nơi đây sẽ khai báo sự kiện
+	b3: Tạo file observer_xxx.php theo directory app/code/Namespace/Module/Observer/observer_xxx.php: nơi viết code observer khi event xảy ra.
+	namespace Kiwee\MyModule;
+ 
+	class MyClass
+	{
+		private $eventManager;
+	 
+		public function __construct(\Magento\Framework\Event\ManagerInterface $eventManager){
+			$this->eventManager = $eventManager;
+		}
+	 
+		public function something() {
+			$eventData = null;
+			// Code...
+			$this->eventManager->dispatch('my_module_event_XXX');
+			// More code that sets $eventData...
+			$this->eventManager->dispatch('my_module_event_XXX', ['myEventData' => $eventData]);
+		}
+	}
+		 
+9.  When  do  we  have  a  conflict  happen?  And  what  happen  when  we  have  a  conflict? 
+Conflict xảy ra khi 2 hay nhiều module cùng preference 1 class nào đó.
